@@ -62,6 +62,60 @@ class DebugContext(CommonContext):
         self.game = ""
         await super().disconnect(allow_autoreconnect)
 
+    def on_package(self, cmd: str, args: dict):
+        """For custom package handling in subclasses
+        This gets called every time the server sends the client a message"""
+        logger.info(args)
+        if cmd == "Connected":
+            self.game = self.slot_info[self.slot].game
+        # I'm attempting to get the keys arg below because it will be false if the key doesn't exist
+        if (cmd == "Retrieved" or cmd == "SetReply") and args.get("keys"): 
+            
+            # If the hint is for us, update the ui
+            if self.ui and f"_read_hints_{self.team}_{self.slot}" in args["keys"]:
+                self.ui.update_hints()
+
+            # Get all keys returned
+            for arg in args["keys"].keys():
+                # Is it a hint?
+                if arg.startswith("_read_hints_"):
+                    # For each hint
+                    for hint in args["keys"][arg]:
+                        # Format the found/not found messages
+                        if hint["found"]:
+                            found_text = {"text": "(found)", "type": "color", "color": "green"}
+                        else:
+                            found_text = {"text": "(not found)", "type": "color", "color": "red"}
+                        # I am manually reassembling the PrintJSON packet
+                        output = {"cmd": "PrintJSON", 
+                            "data": [
+                            {"text": "[Hint]: "}, 
+                            {"text": hint['receiving_player'], "type": "player_id"}, 
+                            {"text": "'s "}, 
+                            {"text": hint['item'], "player": hint['receiving_player'], "flags": hint['item_flags'], "type": "item_id"}, 
+                            {"text": " is at "}, 
+                            {"text": hint['location'], "player": hint['finding_player'], "type": "location_id"}, 
+                            {"text": " in "}, 
+                            {"text": hint['finding_player'], "type": "player_id"}, 
+                            {"text": "'s World"}, {"text": ". "}, 
+                            found_text
+                            ], 
+                            "type": "Hint", 
+                            "receiving": hint['receiving_player'], 
+                            "item": NetworkItem(item=hint['item'], location=hint['location'], player=hint['finding_player'], flags=1), 
+                            "found": False}
+
+                        # Then I tell the client to output it
+                        # on_print_json never touches the server, it's for the local client to display
+                        self.on_print_json(output)
+
+    async def send_msgs(self, msgs: typing.List[typing.Any]) -> None:
+        """ `msgs` JSON serializable """
+        # Print sent messages for debugging
+        logger.info(msgs)
+        # Then tell the parent class to handle it
+        await super().send_msgs(msgs)
+
 
 def launch():
     # So you can run it without a GUI in your terminal
