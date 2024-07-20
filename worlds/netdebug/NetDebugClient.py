@@ -39,7 +39,65 @@ class DebugCommandProcessor(ClientCommandProcessor):
     def __init__(self, ctx: CommonContext):
         super().__init__(ctx)
 
+    @mark_raw
+    def _cmd_manget(self, key: str = ""):
+        """Manually get a key.
+        You can retrieve multiple keys separated by spaces."""
+        if " " in key:
+            key = key.split(" ")
+        else:
+            key = [key]
+        async_start(self.ctx.send_msgs([{"cmd": "Get", "keys": key}]))
 
+    @mark_raw
+    def _cmd_manset(self, raw: str = ""):
+        """Manually set a key. 
+        /manset help for command format and options."""
+
+        help_text = """    Format: /manset key operation value
+    Operations: replace, default, add, mul, pow, mod, floor, ceil, max, min, and, or, xor, left_shift, right_shift, remove, pop, update
+    For details on all operations, use /manset help OPERATION
+            """
+        operations = {
+            "replace": "Sets the current value of the key to `value`.",
+            "default": "If the key has no value yet, sets the current value of the key to `default` of the [Set](#Set)'s package (`value` is ignored).",
+            "add": "Adds `value` to the current value of the key, if both the current value and `value` are arrays then `value` will be appended to the current value.",
+            "mul": "Multiplies the current value of the key by `value`.",
+            "pow": "Multiplies the current value of the key to the power of `value`.",
+            "mod": "Sets the current value of the key to the remainder after division by `value`.",
+            "floor": "Floors the current value (`value` is ignored).",
+            "ceil": "Ceils the current value (`value` is ignored).",
+            "max": "Sets the current value of the key to `value` if `value` is bigger.",
+            "min": "Sets the current value of the key to `value` if `value` is lower.",
+            "and": "Applies a bitwise AND to the current value of the key with `value`.",
+            "or": "Applies a bitwise OR to the current value of the key with `value`.",
+            "xor": "Applies a bitwise Exclusive OR to the current value of the key with `value`.",
+            "left_shift": "Applies a bitwise left-shift to the current value of the key by `value`.",
+            "right_shift": "Applies a bitwise right-shift to the current value of the key by `value`.",
+            "remove": "List only: removes the first instance of `value` found in the list.",
+            "pop": "List or Dict: for lists it will remove the index of the `value` given. for dicts it removes the element with the specified key of `value`.",
+            "update": "Dict only: Updates the dictionary with the specified elements given in `value` creating new keys, or updating old ones if they previously existed."
+        }
+
+        if raw.startswith("help") or raw == "":
+            try:
+                args = raw.split(maxsplit=1)
+                if args[1] in operations.keys():
+                    operation_help = operations[args[1]]
+                    logger.info(f"  Operation: {args[1]}\n  Effect: {operations[args[1]]}")
+            except:
+                logger.info(help_text)
+        else:        
+            args = raw.split(maxsplit=2)
+            key = args[0]
+            operation = args[1]
+            if re.match(r"^\{.*\}$", args[2]):
+                args = json.loads(args[2])
+            elif re.match(r"^\[.*\]$", args[2]):
+                args = list(args[2][1:-1].split(","))
+            else:
+                args = args[2]
+            async_start(self.ctx.send_msgs([{"cmd": "Set", "key": key, "operations":[{"operation": operation, "value": args}]}]))
 
 class DebugContext(CommonContext):        
     # Text Mode to use !hint and such with games that have no text entry
