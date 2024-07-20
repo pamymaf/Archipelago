@@ -106,6 +106,12 @@ class DebugCommandProcessor(ClientCommandProcessor):
         for c in range(1,count):
             async_start(self.ctx.send_msgs([{"cmd": "Get", "keys": [f"_read_hints_{team}_{c}"]}]))
 
+    @mark_raw
+    def _cmd_mansub(self, key: str = ""):
+        """Manually subscribe to a key."""
+        async_start(self.ctx.send_msgs([{"cmd": "SetNotify", "keys": [key]}]))
+        async_start(self.ctx.send_msgs([{"cmd": "Get", "keys": [key]}]))
+
 class DebugContext(CommonContext):        
     # Text Mode to use !hint and such with games that have no text entry
     tags = CommonContext.tags | {"TextOnly"}
