@@ -1,5 +1,10 @@
 .idea
 .vscode
+.envrc
+.direnv/
+pipenv-reqs.txt
+Pipfile
+Pipfile.lock
 
 *_Spoiler.txt
 *.bmbp
