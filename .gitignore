@@ -5,6 +5,7 @@
 pipenv-reqs.txt
 Pipfile
 Pipfile.lock
+*.apworld
 
 *_Spoiler.txt
 *.bmbp
